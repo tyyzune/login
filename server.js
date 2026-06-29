@@ -23,6 +23,12 @@ const UserSchema = new mongoose.Schema({
   password: String,
   name: String,
   avatar: String,
+
+  profile: {
+    type: mongoose.Schema.Types.Mixed,
+    default: {}
+  },
+
   createdAt: { type: Date, default: Date.now }
 });
 
@@ -79,14 +85,23 @@ app.post("/upload-avatar", upload.single("file"), async (req, res) => {
 
 // ================= REGISTER =================
 app.post("/register", async (req, res) => {
-  const { email, password, name, avatar } = req.body;
+
+  const {
+    email,
+    password,
+    name,
+    avatar,
+    profile = {}
+  } = req.body;
 
   if (!email || !password || !name) {
     return res.status(400).json({ error: "Preencha todos os campos" });
   }
 
   try {
+
     const exists = await User.findOne({ email });
+
     if (exists) {
       return res.status(400).json({ error: "Email já cadastrado" });
     }
@@ -97,7 +112,8 @@ app.post("/register", async (req, res) => {
       email,
       password: hash,
       name,
-      avatar
+      avatar,
+      profile
     });
 
     return res.json({
@@ -105,30 +121,44 @@ app.post("/register", async (req, res) => {
       user: {
         id: user._id,
         name: user.name,
-        avatar: user.avatar
+        avatar: user.avatar,
+        profile: user.profile
       }
     });
 
   } catch (err) {
+
     console.error(err);
-    return res.status(500).json({ error: "Erro interno" });
+
+    return res.status(500).json({
+      error: "Erro interno"
+    });
+
   }
+
 });
 
 // ================= LOGIN =================
 app.post("/login", async (req, res) => {
+
   const { email, password } = req.body;
 
   try {
 
     const user = await User.findOne({ email });
+
     if (!user) {
-      return res.status(400).json({ error: "Usuário não encontrado" });
+      return res.status(400).json({
+        error: "Usuário não encontrado"
+      });
     }
 
     const ok = await bcrypt.compare(password, user.password);
+
     if (!ok) {
-      return res.status(401).json({ error: "Senha inválida" });
+      return res.status(401).json({
+        error: "Senha inválida"
+      });
     }
 
     const token = jwt.sign(
@@ -141,18 +171,26 @@ app.post("/login", async (req, res) => {
       user: {
         id: user._id,
         name: user.name,
-        avatar: user.avatar
+        avatar: user.avatar,
+        profile: user.profile
       }
     });
 
   } catch (err) {
+
     console.error(err);
-    return res.status(500).json({ error: "Erro interno" });
+
+    return res.status(500).json({
+      error: "Erro interno"
+    });
+
   }
+
 });
 
 // ================= START =================
 const PORT = process.env.PORT || 3000;
+
 app.listen(PORT, () => {
   console.log("Servidor rodando na porta", PORT);
 });
